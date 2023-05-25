@@ -15,8 +15,8 @@ struct MatchResponse: Codable {
     }
 }
 
-struct MatchEntity: Codable {
-    let id: String
+struct MatchEntity: Codable, Identifiable  {
+    var id = UUID()
     let type: String
     let pouleJournee: PouleJournee
     let home: Team
@@ -32,7 +32,6 @@ struct MatchEntity: Codable {
     let seemsPostponed: String
     
     enum CodingKeys: String, CodingKey {
-        case id = "@id"
         case type = "@type"
         case pouleJournee = "poule_journee"
         case home, away
