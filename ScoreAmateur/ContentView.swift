@@ -20,22 +20,32 @@ struct TeamClassement: Identifiable {
 import SwiftUI
 struct ContentView: View {
     @State var matchs: [MatchEntity] = []
+    @State var classement: [ClassementEntity] = []
+    @State var journeesList: [JourneesEntity] = []
     @State var isDataLoaded = false
     @State private var selectedFlavor: Categorie = .U16
-    
-    let teams = [
-        TeamClassement(ranking: "PI", name: "Equipe", points: "PTS", diff: "Diff"),
-        TeamClassement(ranking: "1", name: "UJS", points: "57", diff: "61"),
-        TeamClassement(ranking: "2", name: "MURET", points: "43", diff: "18"),
-        TeamClassement(ranking: "3", name: "BALMA", points: "40", diff: "27"),
-    ]
+    let journee : JourneesEntity
+    @State private var selectedJournee: JourneesEntity? = JourneesEntity(id: UUID(), name: "21")
+
+    init() {
+        journee = JourneesEntity(id: UUID(), name: "Nom de la journée")
+    }
     var body: some View {
         VStack {
-            Picker("Flavor", selection: $selectedFlavor) {
-                Text("U16 R1").tag(Categorie.U16)
-                Text("U17 R1").tag(Categorie.U17)
-                Text("U18 R1").tag(Categorie.U18)
-                }
+            HStack {
+
+                Picker("Categories", selection: $selectedFlavor) {
+                    Text("U16 R1").tag(Categorie.U16)
+                    Text("U17 R1").tag(Categorie.U17)
+                    Text("U18 R1").tag(Categorie.U18)
+                }.pickerStyle(.menu)
+                Picker("Journées", selection: $selectedJournee) {
+                    ForEach(journeesList, id: \.id) { journee in
+                        Text(journee.name)
+                        }
+                        }
+                    }.pickerStyle(.menu)
+            
                 TabView {
                     VStack{
                         ForEach(matchs, id: \.id) { match in
@@ -51,29 +61,56 @@ struct ContentView: View {
                     }.tabItem {
                         Label("Résultats", systemImage: "sportscourt.fill")
                     }
+                    
                     HStack{
-                        List(teams) { team in
+                        List(classement) { team in
                             HStack {
-                                Text(String(team.ranking)).frame(width: 80)
-                                Spacer().frame(width: 20)
-                                Text(String(team.name)).frame(width: 80)
-                                Spacer().frame(width: 20)
-                                Text(String(team.points)).frame(width: 80)
-                                Spacer().frame(width: 20)
-                                Text(String(team.diff)).frame(width: 80)
+                                Text(String(team.rank)).frame(width: 20, alignment: .leading)    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                Text(String(team.equipe.shortName)).frame(width: 90, alignment: .leading)    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                Text(String(team.pointCount)).frame(width: 30, alignment: .leading).lineLimit(1).bold()
+                                Text(String(team.wonGamesCount)).frame(width: 30, alignment: .leading).lineLimit(1)
+                                Text(String(team.drawGamesCount)).frame(width: 30, alignment: .leading).lineLimit(1)
+                                Text(String(team.lostGamesCount)).frame(width: 30, alignment: .leading).lineLimit(1)
+                                Text(String(team.goalsDiff)).frame(width: 50, alignment: .leading).lineLimit(1)
                             }
-                        }}.tabItem {
+                        }}.onAppear{
+                            callClassement()
+                        }
+                        .tabItem {
                         Label("Classement", systemImage: "list.number")
                     }
                 }
             }
             .onAppear {
                 callWebService()
+                getNumberOfJournees()
             }
         }
         
-        
-        func callWebService() {
+        func callClassement() {
+            guard let url = URL(string: "https://api-dofa.fff.fr/api/compets/397711/phases/1/poules/2/classement_journees?page=1") else {
+                return
+            }
+            
+            URLSession.shared.dataTask(with: url) { (data, response, error) in
+                guard let data = data else {
+                    return
+                }
+                
+                do {
+                    let decoder = JSONDecoder()
+                    let classementResponse = try decoder.decode(ClassementResponse.self, from: data)
+                    classement = classementResponse.hydraMember
+                    
+                } catch {
+                    print("Erreur de décodage JSON : \(error)")
+                }
+            }.resume()
+        }
+
+    func callWebService() {
             guard let url = URL(string: "https://api-dofa.fff.fr/api/compets/397711/phases/1/poules/2/matchs?page=1&pjNo=21") else {
                 return
             }
@@ -92,7 +129,31 @@ struct ContentView: View {
                 }
             }.resume()
         }
+    
+        func getNumberOfJournees() {
+            guard let url = URL(string: "https://api-dofa.fff.fr/api/compets/397711/phases/1/poules/2/poule_journees") else {
+                return
+            }
+
+            URLSession.shared.dataTask(with: url) { (data, response, error) in
+                guard let data = data else {
+                    return
+                }
+                
+                do {
+                    let decoder = JSONDecoder()
+                    let journeesResponse = try decoder.decode(JourneesResponse.self, from: data)
+                    journeesList = journeesResponse.hydraMember
+                    print(journeesList)
+                } catch {
+                    print("Erreur de décodage JSON : \(error)")
+                }
+            }.resume()
+        }
+
+        
     }
+
     struct ContentView_Previews: PreviewProvider {
         static var previews: some View {
             ContentView()
