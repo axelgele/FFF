@@ -19,17 +19,17 @@ struct MatchEntity: Codable, Identifiable  {
     var id = UUID()
     let type: String
     let pouleJournee: PouleJournee
-    let home: Team
-    let away: Team
+    let home: Team?
+    let away: Team?
     let date: String
     let time: String
-    let homeResu: String
-    let homeScore: Int
+    let homeResu: String?
+    let homeScore: Int?
     let homeIsForfeit: String
-    let awayResu: String
-    let awayScore: Int
-    let awayIsForfeit: String
-    let seemsPostponed: String
+    let awayResu: String?
+    let awayScore: Int?
+    let awayIsForfeit: String?
+    let seemsPostponed: String?
     
     enum CodingKeys: String, CodingKey {
         case type = "@type"
